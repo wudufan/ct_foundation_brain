@@ -1,0 +1,25 @@
+FROM tensorflow/tensorflow:2.14.0-gpu
+
+RUN apt update && apt install -y \
+        apt-transport-https ca-certificates gnupg curl \
+        wget \
+        git \
+        git-lfs \
+        dcm2niix && \
+    apt clean
+
+# install gcloud
+RUN echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" | tee -a /etc/apt/sources.list.d/google-cloud-sdk.list && \
+    curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | gpg --dearmor -o /usr/share/keyrings/cloud.google.gpg && \
+    apt update -y && \
+    apt install google-cloud-cli -y
+
+RUN apt clean
+
+COPY requirements.txt /env/requirements.txt
+RUN pip install --no-cache-dir -r /env/requirements.txt
+
+COPY entrypoint.sh /env/entrypoint.sh
+RUN chmod +x /env/entrypoint.sh
+
+ENTRYPOINT [ "/env/entrypoint.sh" ]

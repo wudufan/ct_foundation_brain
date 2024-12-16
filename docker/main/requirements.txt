@@ -1,0 +1,15 @@
+matplotlib
+jupyterlab
+scipy
+scikit-image
+pydicom
+python-gdcm
+pandas
+flake8
+SimpleITK
+xlrd
+absl-py
+dicomweb-client[gcp]
+google-auth
+google-cloud-storage
+requests_toolbelt
