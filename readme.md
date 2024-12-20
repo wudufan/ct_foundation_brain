@@ -14,4 +14,4 @@ To verify the signing in, run `gcloud beta auth application-default print-access
 ## Demos
 
 - `load_lidc_embeddings`: test access to the stored embeddings precomputed for the LIDC datasets on Google Cloud.
-- `load_dicom_from_google_storage`: test access to the stored dicom data shared by google
+- `process_dicom_from_example_storage`: test access to the stored dicom data shared by google and execute the CT foundation API
