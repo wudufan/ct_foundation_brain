@@ -40,7 +40,7 @@ def get_args(default_args=[]):
     parser.add_argument('--location', default='northamerica-northeast2')
     parser.add_argument('--dataset_id', default='brain_ct_stroke')
     parser.add_argument('--dicom_store_id', default='ct_foundation_stroke_dataset')
-    parser.add_argument('--parallel_size', default=16)
+    parser.add_argument('--parallel_size', type=int, default=16)
 
     if 'ipykernel' in sys.argv[0]:
         args = parser.parse_args(default_args)
