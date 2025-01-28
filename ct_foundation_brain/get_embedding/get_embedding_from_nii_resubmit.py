@@ -1,5 +1,6 @@
 '''
 Calculate the embeddings using CT Foundation
+Resubmit the failed embeddings
 '''
 
 # %%
@@ -8,7 +9,6 @@ import argparse
 import sys
 import subprocess
 
-from google.cloud import storage
 from concurrent.futures import ThreadPoolExecutor
 import dataclasses
 import functools
@@ -27,6 +27,8 @@ from ct_foundation_brain.locations import data_dir
 def get_args(default_args=[]):
     parser = argparse.ArgumentParser()
     parser.add_argument('--output_dir')
+    parser.add_argument('--output_name', default='embeddings_final')
+    parser.add_argument('--reference_name', default='embeddings')
     parser.add_argument('--bucket_dir', help='Directory in the bucket')
     parser.add_argument('--project_id', default='fleet-space-445215-f7')
     parser.add_argument('--bucket_name', default='ct_hemorrhage')
@@ -46,22 +48,6 @@ def get_args(default_args=[]):
         print(f'{k} = {getattr(args, k)}', flush=True)
 
     return args
-
-
-# %%
-def get_nii_urls(project_id, bucket_name, input_dir):
-    gcs_storage_client = storage.Client(project_id)
-    gcs_bucket = gcs_storage_client.bucket(bucket_name)
-    nifti_urls = []
-
-    if not input_dir.endswith('/'):
-        input_dir = input_dir + '/'
-
-    for a in gcs_bucket.list_blobs(prefix=input_dir):
-        if a.name.endswith('.gz'):
-            nifti_urls.append(f'gs://{bucket_name}/' + a.name)
-
-    return nifti_urls
 
 
 # %%
@@ -220,11 +206,14 @@ def main(args):
 
     cred, token = update_session()
 
-    print('Retrieving all niis...', flush=True)
-    nii_urls = get_nii_urls(args.project_id, args.bucket_name, args.bucket_dir)
-    print('Found {} niis'.format(len(nii_urls)), flush=True)
+    print('Looking for failed embeddings...', flush=True)
+    df_input = pd.read_csv(os.path.join(output_dir, args.reference_name + '.csv'))
+    df_input = df_input[
+        df_input['embedding'].apply(lambda x: len(x) <= 100)
+    ]
+    print('Found {} failed embeddings'.format(len(df_input)), flush=True)
 
-    # nii_urls = nii_urls[:10]
+    nii_urls = df_input['url'].values.tolist()
 
     df_embeddings = []
     print('Calculating embeddings...', flush=True)
@@ -254,11 +243,11 @@ def main(args):
             })
 
         df = pd.DataFrame(df_embeddings)
-        df.to_csv(os.path.join(output_dir, 'embeddings.csv'), index=False)
+        df.to_csv(os.path.join(output_dir, args.output_name + '.csv'), index=False)
     print('Embeddings calculated', flush=True)
 
     df_embeddings = pd.DataFrame(df_embeddings)
-    df_embeddings.to_csv(os.path.join(output_dir, 'embeddings.csv'), index=False)
+    df_embeddings.to_csv(os.path.join(output_dir, args.output_name + '.csv'), index=False)
 
     # extract the successful embeddings and save to npz files
     df_embeddings = df_embeddings[
@@ -269,15 +258,33 @@ def main(args):
     df_embeddings = df_embeddings.drop_duplicates(subset=['filename'])
     print('There are {} unique successful embeddings'.format(len(df_embeddings)), flush=True)
 
+    # aggregate with the reference embedding
+    df_reference = pd.read_csv(os.path.join(output_dir, args.reference_name + '.csv'))
+    df_reference = df_reference[['filename', 'url']]
+    ref_data = np.load(os.path.join(output_dir, args.reference_name + '.npz'), allow_pickle=True)
+    ref_filenames = ref_data['filename']
+    ref_embeddings = ref_data['embedding']
+
+    # merge the reference embeddings with the new embeddings in np.array
+    merged_filenames = np.concatenate([ref_filenames, df_embeddings['filename'].values])
+    merged_embeddings = np.concatenate([ref_embeddings, np.array(df_embeddings['embedding'].values.tolist())])
+
+    df_merged = pd.DataFrame({
+        'filename': merged_filenames,
+        'embedding': merged_embeddings.tolist()
+    })
+    df_merged = df_reference.merge(df_merged, on='filename', how='inner')
+
+    df_merged.to_csv(os.path.join(output_dir, args.output_name + '.csv'), index=False)
     np.savez(
-        os.path.join(output_dir, 'embeddings.npz'),
-        filename=df_embeddings['filename'].values,
-        embedding=np.array(df_embeddings['embedding'].values.tolist())
+        os.path.join(output_dir, args.output_name + '.npz'),
+        filename=df_merged['filename'].values,
+        embedding=np.array(df_merged['embedding'].values.tolist())
     )
 
     print('Done', flush=True)
 
-    return df_embeddings
+    return df_merged
 
 
 # %%
