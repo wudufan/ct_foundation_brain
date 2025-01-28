@@ -1,17 +1,15 @@
 #!/bin/bash
 
-input_dir="AISD_2021_ncct_ischemic_stroke/dicoms"
+input_dir="bhsd_2023_ct_herrmohage/label_192/images"
+output_dir="BHSD/origin/"
 project_id="fleet-space-445215-f7"
-location="northamerica-northeast2"
-dataset_id="brain_ct_stroke"
-dicom_store_id="ct_foundation_stroke_dataset"
+bucket_name="ct_hemorrhage"
 
 root_dir="/mnt/src_data"
 
-python upload_dicom_data.py \
-    --input_dir="${input_dir}" \
-    --project_id="${project_id}" \
-    --location="${location}" \
-    --dataset_id="${dataset_id}" \
-    --dicom_store_id="${dicom_store_id}" \
-    &> "${root_dir}/${input_dir}/upload_dicom_aisd_20241230.log"
+python upload_nii_data.py \
+    --input_dir "${input_dir}" \
+    --output_dir "${output_dir}" \
+    --project_id "${project_id}" \
+    --bucket_name "${bucket_name}" \
+    &> "${root_dir}/${input_dir}/upload_nii_bhsd_20250128.log"
