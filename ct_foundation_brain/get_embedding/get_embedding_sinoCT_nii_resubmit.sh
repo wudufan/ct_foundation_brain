@@ -12,7 +12,7 @@ root_dir="/mnt/data"
 
 mkdir -p "${root_dir}/${output_dir}"
 
-python get_embedding_sinoCT_nii_resubmit.py \
+python get_embedding_from_nii_resubmit.py \
     --output_dir "${output_dir}" \
     --bucket_dir "${bucket_dir}" \
     --project_id "${project_id}" \
