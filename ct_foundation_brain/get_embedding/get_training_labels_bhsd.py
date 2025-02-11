@@ -76,6 +76,8 @@ def main(args):
         manifest.append(row)
 
     manifest = pd.DataFrame(manifest)
+    # replace missing values with 0
+    manifest = manifest.fillna(0)
     manifest.to_csv(output_filename, index=False)
 
     return manifest

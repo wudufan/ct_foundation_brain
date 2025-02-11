@@ -2,6 +2,7 @@ matplotlib
 jupyterlab
 scipy
 scikit-image
+scikit-learn
 pydicom
 python-gdcm
 pandas
